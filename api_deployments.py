@@ -1,21 +1,15 @@
 #!/usr/bin/python3
 from datetime import datetime
-from pprint import pprint
 import re
 import requests
-import sys
+
 
 # The wrms website to talk to.
 BASE_URL = 'https://wrms.catalyst.net.nz'
-# Replace AUTH_TOKEN with your token - obtained via /api2/login
-# You can use the explorer to help: https://wrms.catalyst.net.nz/api2/explorer
-        #
-#turn main into proper function
-#call from wherever you want to put hte stuff in
+
 
 class WRMSClient(object):
-    def __init__(self, auth_token=None, debug=False):
-        # optional argument of a valid auth token
+    def __init__(self, auth_token, debug=False):
         self.auth_token = auth_token
         self.debug = debug
 
@@ -63,8 +57,8 @@ class WRMSClient(object):
             'page_size': 10000,
             'page_no': 1
         })
-        # Add the rest of the arguments from function definition as shown below
 
+        # Add the rest of the arguments from function definition as shown below
         if self.debug:
             params["output_format"] = "pretty_json"
 
@@ -73,24 +67,6 @@ class WRMSClient(object):
         if not results['success']:
             raise Exception(results['message'])
         return results
-
-
-    def time_in_month(self, month, year, system):
-        """ Returns a list of all the timesheet entries in this month for a system
-        https://wrms.catalyst.net.nz/api2/report?output_format=pretty_json&report_type=timesheet&system=2264&display_fields=brief,hours,request_id&created_date=2017-05-01%3A2017-05-30&page_size=1000&_o=request_id&_d=asc
-
-        """
-        created_date = date_format(month, year) #2014-05-01:2014-05-31
-        params = {
-            "system": system,
-            "created_date": created_date,
-            #"created_date": "2017-05-01:2017-05-30",
-            "_o": "request_id",
-            "_d": "asc",
-        }
-        report = self.report("timesheet", ("brief", "hours", "request_id"), extra_params=params) #"status_desc"
-        #report = self.report("timesheet", ("brief", "hours", "request_id"), extra_params=params) #"status_desc"
-        return report['response']["results"]
 
     def request_details(self, request_id):
         # approved_hours
@@ -121,7 +97,6 @@ class WRMSClient(object):
         ), extra_params=params)
         return report['response']['results']
 
-        #TODO: remove these 2 functions if not being used
     def post_request(self, url, params):
         headers = self._get_auth_headers()
 
@@ -153,6 +128,7 @@ class WRMSClient(object):
         """ Gets the details for a list of work requests - just the brief and wr number
             Args: wr_list: A list of work request numbers
             Returns: A list of dictionaries, each of which has the brief and the wr number in it
+
         """
         results = []
         for wr in wr_list:
@@ -165,6 +141,7 @@ class WRMSClient(object):
             results.append(wr_dict)
 
         return results
+
 
 def get_deployments(token, month, head_hosting_wr):
     wrms = WRMSClient(token)
@@ -183,7 +160,6 @@ def get_deployments(token, month, head_hosting_wr):
                 except ValueError:
                     print ('Error with: {} {}\n Either this wr has no date in the brief, the date has been entered incorrectly or there is an extraneous child in WRMS. To include this WR in the report, include the correct date in the WRMS brief and run .sla_report.py again.\nACCEPTABLE DATE FORMATS: YYYYmmdd, dd-mm-YYYY, dd/mm/YYYY\n'.format(wr['request_id'], wr['brief']))
 
-            #TODO: try and except - if it returns an error with datetime, print the wr (in case entered into wrms incorrectly)
             if date >= month and date < next_month(month):
                 deployed_wrs = [] # A list of dictionaries
 
@@ -196,6 +172,7 @@ def get_deployments(token, month, head_hosting_wr):
                 }
                 final_wrs.append(this_release)
     return final_wrs
+
 
 def next_month(date):
     """ Get the same day next month
@@ -211,9 +188,3 @@ def next_month(date):
         return datetime(date.year + 1, 1, date.day)
     else:
         return datetime(date.year, next_month, date.day)
-
-if __name__ == "__main__":
-    if len(sys.argv) == 0:
-        print("USAGE: wrms.py AUTH_TOKEN")
-    else:
-        main(sys.argv[1])
