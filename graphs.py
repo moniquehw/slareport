@@ -60,7 +60,7 @@ def render_lifetime_graph(summary_data, current_month, contract_hours, short_nam
         ax.plot([0., n_months - 0.3], [threshold, threshold], "k--")
 
         short_date = current_month[:3] + current_month[-2:]
-        filename = os.getcwd() + "/" + short_name + "/" + short_name + "_" + short_date + "_summary_graph.png"
+        filename = os.getcwd() + "/" + "clients/" + short_name + "/" + short_name + "_" + short_date + "_summary_graph.png"
 
         plt.savefig(filename, dpi=200)
         return filename

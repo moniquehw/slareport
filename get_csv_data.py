@@ -11,6 +11,7 @@ def get_url():
         Returns dictionary
     """
     url_dict = {}
+    # the 2 lists of organisation names to get data for is in clients/config.py
 
     if sys.argv[1] == 'sla': #just get data for sla reports if sla is in sys.argv[1]
         org_list = sla_list
@@ -22,7 +23,7 @@ def get_url():
         org_list.update(sla_list)
 
     for org in org_list: #get a list of url's to get csv data from, using the config files
-        with open (org + '/' + org + '.json') as data_file:
+        with open ('clients/' + org + '/' + org + '.json') as data_file:
             json_dict = json.load(data_file)
             url = json_dict['url']
             url_dict[org] = url
@@ -30,12 +31,12 @@ def get_url():
 
 def save_csv():
     """ Saves a .csv file for each organisation in the org_list.
-        Saved filename is short_name + month/year + .csv (eg unicef_march17.csv)
+        Saved filename is short_name + month/year + .csv (eg orgname_march17.csv)
     """
     url_dict = get_url()
     for client in url_dict:
         response = requests.get(url_dict[client], stream=True)
-        filename = os.getcwd() + "/" + client + '/' + client + '.csv'
+        filename = os.getcwd() + "/" + 'clients/' + client + '/' + client + '.csv'
         handle = open(filename, "wb")
         for chunk in response.iter_content(chunk_size=512):
             if chunk:  # filter out keep-alive new chunks

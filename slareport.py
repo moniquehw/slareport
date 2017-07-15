@@ -112,7 +112,7 @@ def update_deployment_list(client):
 
 
 def get_data_from_csv(client):
-    sla_list = get_sla_data(os.getcwd() + "/" + client['short_name'] + '/' + client['short_name'] + '.csv')
+    sla_list = get_sla_data(os.getcwd() + "/clients/" + client['short_name'] + '/' + client['short_name'] + '.csv')
     return sla_list
 
 
@@ -210,7 +210,7 @@ def get_data_from_config(name):
         Returns a dictionary with that data
     """
     try:
-        with open(name + '/' + name + '.json') as data_file:
+        with open('clients/' + name + '/' + name + '.json') as data_file:
             client = json.load(data_file)
             return client
     except FileNotFoundError:
@@ -218,10 +218,10 @@ def get_data_from_config(name):
 
 
 def get_month_config(filename):
-    """ Gets data from data that has been manually entered into that months config file (eg unicef-may17.json)
+    """ Gets data from data that has been manually entered into that months config file (eg org-may17.json)
         Returns a dictionary
     """
-    with open(filename + '.json') as data_file:
+    with open('clients/' + filename + '.json') as data_file:
         exec_summary = json.load(data_file)
     return exec_summary
 
@@ -240,7 +240,7 @@ def get_total_hours(wr_list): #non_quoted_sla list
 def get_system_name (system_id):
     """ Gets system name from config file using system_id. Returns system name
     """
-    with open(sys.argv[1] + '.json') as data_file:
+    with open('clients/' + sys.argv[1] + '.json') as data_file:
          data = json.load(data_file)
 
          for system in data["systems"]:

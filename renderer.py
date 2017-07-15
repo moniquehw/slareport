@@ -121,8 +121,6 @@ class SLARenderer:
                 self.set_table_cell(table, cell[0], cell[1], {"ParaStyleName": "Catalyst - Table header"})
                 table.getCellByName(cell[0]).setPropertyValue("BackColor", grey)
 
-            #TODO - fix indexing in this
-            #if there are multiple entries in the storage_used field in the config file (eg production, staging, archive), enter as a bulleted list.
             if len(self.client['storage_used']) > 2:
                 #print ('test', self.client['storage_used'])
                 sep = table.TableColumnSeparators
@@ -223,7 +221,8 @@ class SLARenderer:
 
         except Exception as e:
             print(e)
-            print ('Failure to connect to soffice process.')
+            print('Failure to connect to soffice process.')
+            print('In a new terminal, run soffice --writer --accept="socket,host=localhost,port=2002;urp;StarOffice.ServiceManager"')
             import sys
             sys.exit(-1)
         smgr = ctx.ServiceManager
@@ -269,7 +268,7 @@ class SLARenderer:
 
     def save(self):
         """ Saves the file as a .odt file to the current directory"""
-        filename = "file:///" + os.getcwd() + "/" + self.client['short_name'] + "/" + self.client['short_name'] + "_" + self.client['config_date'] + ".odt"
+        filename = "file:///" + os.getcwd() + "/clients/" + self.client['short_name'] + "/" + self.client['short_name'] + "_" + self.client['config_date'] + ".odt"
         self.document.storeToURL(filename, ())
         #self.document.storeToURL("file:///home/monique/projects/sla_reports/unicef-may17.odt", ())
         #self.document = self.desktop.storeToURL("file:///" + os.getcwd() + self.client['short_name'] + "_" + self.client['date'] + ".odt", "_blank", 0, ())
