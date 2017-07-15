@@ -1,0 +1,19 @@
+{
+  "short_name": "org",
+  "service_name": "Sample_Name Hosting and Support",
+  "client_name": "Organisation Name",
+  "organisation_id": "1234",
+  "contract_hours": 20,
+  "sla_start_date": "January 01 2017",
+  "sla_end_date": "December 31 2018",
+  "url": "http://foo.wgtn.cat-it.co.nz:8000/hours/1234",
+  "hosting": "True",
+  "hosting_hrs_additional": false,
+  "recipients": ["recipient name", "another recipient name"],
+  "system": {
+      "id": "4321",
+      "type": "SLA",
+      "system_name": "Org Service Level Agreement 2017 – 2018"
+  },
+  "deployment_head_wr": "000000"
+}

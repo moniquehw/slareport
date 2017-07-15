@@ -1,0 +1,31 @@
+  {
+  "config_date": "June 2017",
+  "exec_summary": "June exec summary.",
+  "number_active_users": "1",
+  "storage_used": ["100gb"],
+  "uptime": "100%",
+  "ooh":"None",
+  "additional_hours_override": 0,
+  "sla_hours_override": 0,
+  "list_of_production_changes": [
+            {"date": "15 June 2017",
+             "wrs":[{
+                      "request_id": 123456,
+                      "brief": "Things were done",
+                      "timesheets": 3},
+                    {
+                      "request_id": 123457,
+                      "brief": "Fires were put out",
+                      "timesheets": 2}
+                    ]
+                  }
+            {"date": "02 June 2017",
+             "wrs":[{
+                      "request_id": 654321,
+                      "brief": "Turned it off and on again",
+                      "timesheets": 1}]
+                  }
+
+             ]
+
+    }

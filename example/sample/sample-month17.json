@@ -1,0 +1,14 @@
+  {
+  "config_date": "June 2017",
+  "exec_summary": "June exec summary.",
+  "number_active_users": "1",
+  "storage_used": ["100gb"],
+  "uptime": "100%",
+  "ooh":"None",
+  "additional_hours_override": 0,
+  "sla_hours_override": 0,
+  "list_of_production_changes": [
+    
+  ]
+
+}
