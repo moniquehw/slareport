@@ -1,0 +1,20 @@
+{
+  "short_name": "stfc",
+  "service_name": "Totara",
+  "client_name": "Science and Technology Facilities Council",
+  "organisation_id": "1730",
+  "contract_hours": 8,
+  "rounding": 0.5,
+  "sla_start_date": "June 17 2016",
+  "sla_end_date": "June 16 2018",
+  "url": "http://foo.wgtn.cat-it.co.nz:8000/hours/1730",
+  "hosting": "False",
+  "hosting_hrs_additional": false,
+  "recipients": [],
+  "system": {
+      "id": "2897",
+      "type": "SLA",
+      "system_name": "STFC Service Level Agreement 2017 – 2018"
+  },
+  "deployment_head_wr": "000000"
+}

@@ -9,7 +9,7 @@
   "sla_hours_override": 0,
   "list_of_production_changes": [
             {"date": "15 June 2017",
-             "wrs":[{
+             "deployed_wrs":[{
                       "request_id": 123456,
                       "brief": "Things were done",
                       "timesheets": 3},
@@ -20,7 +20,7 @@
                     ]
                   }
             {"date": "02 June 2017",
-             "wrs":[{
+             "deployed_wrs":[{
                       "request_id": 654321,
                       "brief": "Turned it off and on again",
                       "timesheets": 1}]

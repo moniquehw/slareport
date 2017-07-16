@@ -14,45 +14,62 @@ class SLARenderer:
 
         self.render_lifetime_graph()
 
-        self.find_replace("{{service_name}}", self.client["service_name"])
-        self.find_replace("{{config_date}}", self.client["config_date"])
-        self.find_replace("{{sla_start_date}}", self.client["sla_start_date"])
-        self.find_replace("{{sla_end_date}}", self.client["sla_end_date"])
-        self.find_replace("{{exec_summary}}", self.client["exec_summary"])
+        self.find_replace("{{service_name}}", self.client.config["service_name"])
+        self.find_replace("{{config_date}}", self.client.month_config["config_date"])
+        self.find_replace("{{sla_start_date}}", self.client.config["sla_start_date"])
+        self.find_replace("{{sla_end_date}}", self.client.config["sla_end_date"])
+        self.find_replace("{{exec_summary}}", self.client.month_config["exec_summary"])
 
-        total_non_quoted_sla = self.client["total_non_quoted_sla"]
-        total_quoted_sla = self.client["total_quoted_sla"]
-        self.client["total_sla_hours"] = total_non_quoted_sla + total_quoted_sla
-        self.find_replace("{{contract_hours}}", self.client["contract_hours"])
-        self.find_replace("{{total_sla_hours}}", self.client["total_sla_hours"])
-        self.find_replace("{{quoted_non_sla}}", self.client["total_quoted_non_sla"])
-        self.find_replace("{{system_name}}", self.client['system']["system_name"])
-        self.find_replace("{{system}}", self.client['system']["system_name"])
+        active_month = self.client.get_active_month()
 
-        all_slas = self.client["quoted_sla"]
-        all_slas += self.client["non_quoted_sla"]
+        self.find_replace("{{contract_hours}}", self.client.config["contract_hours"])
+        self.find_replace("{{total_sla_hours}}", active_month.get_sla_total())
+        self.find_replace("{{quoted_non_sla}}", active_month.get_non_sla_total())
 
-        if self.client['hosting'] != "False":
+        if self.client.config['hosting']:
             self.insert_platform_statistics_table()
 
         self.insert_text("Work Breakdown", "Catalyst - Heading 1")
         #insert wr tables for sla and non sla work
-        self.insert_system_table(all_slas, "SLA Hours", self.client['total_sla_hours'])
-        self.insert_text("* No cost incurred this month for WR's with 0 hours", "Catalyst - Table Annotation")
+        if active_month.get_sla_total() > 0:
+            self.insert_system_table(active_month.get_sla_wrs(), "SLA Hours", active_month.get_sla_total())
+            self.insert_text("* No cost incurred this month for WR's with 0 hours", "Catalyst - Table Annotation")
+        else:
+            self.insert_text("SLA Hours", "Catalyst - Heading 2")
+            self.insert_text("No SLA Hours were used this month", "Catalyst - Text Body")
 
-        self.insert_system_table(self.client['quoted_non_sla'], "Additional Hours", self.client['total_quoted_non_sla'])
-        self.insert_text("* No cost incurred this month for WR's with 0 hours", "Catalyst - Table Annotation")
+        if active_month.get_non_sla_total() > 0:
+            self.insert_system_table(active_month.get_non_sla_wrs(), "Additional Hours", active_month.get_non_sla_total())
+            self.insert_text("* No cost incurred this month for WR's with 0 hours", "Catalyst - Table Annotation")
+        else:
+            self.insert_text("Additional Hours", "Catalyst - Heading 2")
+            self.insert_text("No Additional Hours were used this month", "Catalyst - Text Body")
 
         self.insert_summary_table()
-        self.find_replace("{{client_name}}", self.client["client_name"])
-        self.find_replace("{{recipients}}", self.client["recipients"])
-        self.find_replace("{{last_modified}}", self.client["last_modified"])
+        self.find_replace("{{client_name}}", self.client.config["client_name"])
+
+        #"\n".join(self.client.config['recipients'])
+        self.find_replace("{{last_modified}}", self.client.get_last_modified())
 
         self.save()
 
+    def bulleted_list(self, table, cell_name, blist):
+        if len(blist) > 1:
+            table_text = table.getCellByName(cell_name)
+            cursor = table_text.createTextCursor()
+            for item in blist:
+                cursor.setPropertyValue("ParaStyleName", "Catalyst - Bullet List")
+                table_text.insertString(cursor, item, 0)
+                table_text.insertControlCharacter(cursor, PARAGRAPH_BREAK, 0)
+            cursor.gotoEndOfParagraph(True)
+            cursor.goLeft(1, True)
+            cursor.String = ""
+        else: #else enter with no bullets
+            self.set_table_cell(table, cell_name, blist[0], {"ParaStyleName": "Catalyst - Table contents"})
+
     def render_lifetime_graph(self):
-        #pprint.pprint(self.client['lifetime_summary'])
-        url = render_lifetime_graph(self.client['lifetime_summary'], self.client['date'].strftime("%b %y"), self.client['contract_hours'], self.client['short_name'])
+        """ Renders a lifetime summary graph """
+        url = render_lifetime_graph(self.client.get_lifetime_summary(), self.client.date.strftime("%b %y"), self.client.config['contract_hours'], self.client.name)
         text = self.document.Text
         replace_desc = self.document.createReplaceDescriptor()
         replace_desc.setSearchString("{{lifetime_summary}}")
@@ -105,8 +122,10 @@ class SLARenderer:
         for cell in (("A1", "Prepared for:"), ("A2", "Client Distribution:"), ("A3", "Created on:")):
             self.set_table_cell(table, cell[0], cell[1], {"ParaStyleName": "Catalyst - Table header"})
             table.getCellByName(cell[0]).setPropertyValue("BackColor", grey)
-        for cell in (("B1", "{{client_name}}"), ("B2", "{{recipients}}"), ("B3", "{{last_modified}}")):
+        for cell in (("B1", "{{client_name}}"), ("B3", "{{last_modified}}")):
             self.set_table_cell(table, cell[0], cell[1], {"ParaStyleName": "Catalyst - Table contents"})
+        self.bulleted_list(table, 'B2', self.client.config['recipients'])
+
         sep = table.TableColumnSeparators
         sep[0].Position = 3000
         table.TableColumnSeparators = sep
@@ -121,61 +140,22 @@ class SLARenderer:
                 self.set_table_cell(table, cell[0], cell[1], {"ParaStyleName": "Catalyst - Table header"})
                 table.getCellByName(cell[0]).setPropertyValue("BackColor", grey)
 
-            if len(self.client['storage_used']) > 2:
-                #print ('test', self.client['storage_used'])
-                sep = table.TableColumnSeparators
-                sep[0].Position = 3000
-                table.TableColumnSeparators = sep
-                table_text = table.getCellByName("B2")
-                cursor = table_text.createTextCursor()
-                for number in self.client['storage_used']:
-                    #print (number)
-                    cursor.setPropertyValue("ParaStyleName", "Catalyst - Bullet List")
-                    table_text.insertString(cursor, number, 0)
-                    table_text.insertControlCharacter(cursor, PARAGRAPH_BREAK, 0)
-                cursor.gotoEndOfParagraph(True)
-                cursor.goLeft(1, True)
-                cursor.String = ""
-            else: #else enter with no bullets
-                self.set_table_cell(table, "B2", self.client['storage_used'][0], {"ParaStyleName": "Catalyst - Table contents"})
+            self.bulleted_list(table, 'B2', self.client.month_config['storage_used'])
+            self.bulleted_list(table, 'B4', self.client.month_config['ooh'])
 
-            #Make out of hours events a bulleted list unless it is 'None'
-            if "None" in self.client["ooh"]:
-                self.set_table_cell(table, "B4", self.client["ooh"][0], {"ParaStyleName": "Catalyst - Table contents"})
-            else:
-                sep = table.TableColumnSeparators
-                sep[0].Position = 3000
-                table.TableColumnSeparators = sep
-                table_text = table.getCellByName("B4")
-                cursor = table_text.createTextCursor()
-                for ooh_item in self.client["ooh"]:
-                    cursor.setPropertyValue("ParaStyleName", "Catalyst - Bullet List")
-                    table_text.insertString(cursor, ooh_item, 0)
-                    table_text.insertControlCharacter(cursor, PARAGRAPH_BREAK, 0)
-                cursor.gotoEndOfParagraph(True)
-                cursor.goLeft(1, True)
-                cursor.String = ""
-
-
-            for cell in (("B1",self.client['number_active_users']), ("B3", self.client["uptime"])): #("B4", self.client["ooh"])):
+            for cell in (("B1",self.client.month_config['number_active_users']), ("B3", self.client.month_config["uptime"])): #("B4", self.client["ooh"])):
                 self.set_table_cell(table, cell[0], cell[1], {"ParaStyleName": "Catalyst - Table contents"})
             sep = table.TableColumnSeparators
             sep[0].Position = 3000
             table.TableColumnSeparators = sep
-            #pprint.pprint(dir(table))
             table_text = table.getCellByName("B5")
             cursor = table_text.createTextCursor()
 
-            if self.client['list_of_production_changes'][0] == "None":
-                cursor.setPropertyValue("ParaStyleName", "Catalyst - Table contents")
-                table_text.insertString(cursor, "None", 0)
-                table_text.insertControlCharacter(cursor, PARAGRAPH_BREAK, 0)
-                cursor.gotoEndOfParagraph(True)
-                cursor.goLeft(1, True)
-                cursor.String = ""
-                return None
+            production_changes = self.client.get_deployment_list()
+            if len(production_changes) == 0:
+                self.set_table_cell(table, "B5", "None", {"ParaStyleName": "Catalyst - Table contents"})
             else:
-                for deployment in self.client['list_of_production_changes']:
+                for deployment in production_changes:
                     cursor.setPropertyValue("ParaStyleName", "Catalyst - Table header")
 
                     table_text.insertString(cursor, deployment['date'], 0)
@@ -185,7 +165,7 @@ class SLARenderer:
 
                     for wr in deployment["deployed_wrs"]:
                         new_cursor = table_text.createTextCursorByRange(cursor)
-                        new_cursor.setString("WR: " + wr["request_id"])
+                        new_cursor.setString("WR: {}".format(wr["request_id"]))
                         new_cursor.HyperLinkURL = "https://wrms.catalyst.net.nz/wr.php?request_id={}".format(wr["request_id"])
 
                         table_text.insertString(cursor, "  " + wr["brief"], 0)
@@ -268,9 +248,7 @@ class SLARenderer:
 
     def save(self):
         """ Saves the file as a .odt file to the current directory"""
-        filename = "file:///" + os.getcwd() + "/clients/" + self.client['short_name'] + "/" + self.client['short_name'] + "_" + self.client['config_date'] + ".odt"
+        filename = "file:///" + os.getcwd() + "/clients/" + self.client.name + "/" + \
+                   self.client.name + "_" + self.client.month_config['config_date'] + ".odt"
         self.document.storeToURL(filename, ())
-        #self.document.storeToURL("file:///home/monique/projects/sla_reports/unicef-may17.odt", ())
-        #self.document = self.desktop.storeToURL("file:///" + os.getcwd() + self.client['short_name'] + "_" + self.client['date'] + ".odt", "_blank", 0, ())
-
         self.document.close(True)

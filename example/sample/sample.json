@@ -4,10 +4,11 @@
   "client_name": "Organisation Name",
   "organisation_id": "1234",
   "contract_hours": 20,
+  "rounding": 0.5,
   "sla_start_date": "January 01 2017",
   "sla_end_date": "December 31 2018",
   "url": "http://foo.wgtn.cat-it.co.nz:8000/hours/1234",
-  "hosting": "True",
+  "hosting": true,
   "hosting_hrs_additional": false,
   "recipients": ["recipient name", "another recipient name"],
   "system": {
