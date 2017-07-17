@@ -12,9 +12,24 @@ from client import Client
 
 #### TODO:
     #pie chart of time spent on each wr
-    
+    #hyperlinks on wr's
+    #no additional hours - empty table or words?
+    #different report to show how many sla hours used/left and how many have been quoted
+
+    #what kind of chart to show the distribution of small/medium/large requests (pie chart?)
+
+    #for response time - what counts as a response? work done, note added etc
+    #for distribution of WR types and severity, is this just done with an api call over the wr's listed for that month? (including the 0's?)
+
+
     #example of not working - hla june 274246
+    #won't ever see the details of this in a report, because it will be missed in both months. But the hours are added up in the lifetime graph.
     # solution - add a field to the spreadsheet for date that quote is approved
+
+    # for a working dev report - make a table for the current month and the month before with WR number, hyperlink, first firew words of brief, sum amount.
+    # could have a column for quoted amount and timesheeted amount, and total hours used for that month.
+    # instead of taking the lump sum off straight away, add it up as it goes and say when it has reached the number quoted. if it goes over, make red :)
+    #at bottom, 2 totals - total timesheeted and total quoted
 
     #round each wr to nearest half hour
     # change hosting to true or false, lower case. fix in sla report
@@ -22,7 +37,7 @@ from client import Client
 
     #noapi argv - readme file and argv help
     # check if any of the wr numbers for the deployments match, then print out an error at the end (or a warning on the report - name it differently?)
-    #try and except if it cant convert the wr number (ie its written wrong in wrms)
+
     #https://blog.oio.de/2010/05/14/embed-an-image-into-an-openoffice-org-writer-document/
 
     # Argv - set default to org.csv, and a 3rd argv uses that file name instead.
