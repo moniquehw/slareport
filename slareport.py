@@ -97,6 +97,7 @@ if __name__ == '__main__':
         argparser.add_argument("client", help="lowercased short name of the client")
         argparser.add_argument("date", help="date - for example march17")
         argparser.add_argument("token", help="api token")#api token. If using config data for platform statistics instead of an api call, token is None
+        argparser.add_argument("--norender", action="store_true", help="Don't render the report")
         args = argparser.parse_args()
         auth_token = args.token
 
@@ -104,5 +105,6 @@ if __name__ == '__main__':
         client = Client(sys.argv[1], filename, sys.argv[3])
         client.initialise_data()
         check_sla_date(client)
-        renderer = SLARenderer(client)
-        renderer.render()
+        if not args.norender:
+            renderer = SLARenderer(client)
+            renderer.render()

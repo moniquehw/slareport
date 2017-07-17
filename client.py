@@ -107,15 +107,29 @@ class Client:
                 for deployed_wrs in deployment['deployed_wrs']:
                     deployed_wrs['request_id'] = str(deployed_wrs['request_id'])
 
-            list_of_production_changes.sort(key=lambda d : (d.get("date")))
+        list_of_production_changes.sort(key=lambda d : (d.get("date")))
         return list_of_production_changes
-
 
     def sort_quotes(self):
         """ Update the timesheeted hours in client for each WR (to take into account previous
             months work that has already been quoted and the hours taken off).
 
         """
+        # First, assign each WR to the appropriate month
+        for month in self.months:
+            ids_to_pop = []
+            for wr in month.wrs:
+                quotes = wr["quotes_approved"] + wr["quotes_unapproved"]
+                if len(quotes) > 0:
+                    if quotes[0]["sla"] and quotes[0]["sla_month"] != month.month:
+                        # NOTE: If there are two approved quotes for two different months, you're out of luck
+                        ids_to_pop.append(wr["request_id"])
+                        new_month = self.get_month(quotes[0]["sla_month"])
+                        new_month.get_wr(wr["request_id"])["quotes_approved"].append(wr["quotes_approved"]) # This won't work if there are no timesheets for that month
+                        new_month.get_wr(wr["request_id"])["quotes_unapproved"].append(wr["quotes_unapproved"])
+
+            for i in ids_to_pop:
+                month.pop_wr(i)
         quoted_non_sla = {}
         quoted_sla = {}
 
@@ -124,51 +138,41 @@ class Client:
                 wr["timesheets"] = round_up_to(wr['timesheets'], self.config['rounding'])
                 if self.config['hosting_hrs_additional'] and 'Hosting' in wr['system']:
                      # if the wr is in a hosting system and hosting counts towards sla hours
-                     pass
-
-                #if the wr has a quote
-                    #if the quote is for sla
-                        #if the quote is for this months sla:
-                            #add it to quoted sla
-                        #else:
-                            #ignore it
-                    #else:
-                        #add it to additional hours
-
-
-                elif wr['request_id'] in quoted_non_sla or wr['request_id'] in quoted_sla: # If the wr was quoted in the previous months
-                    try:
-                        if '-' in wr['quotes'][0]['orig'][1]:
-                            quote_month = wr['quotes'][0]['orig'][1][7:-4]
-                            #quote_month = quote_month[7:-4]
-                            quote_month = datetime.strptime(quote_month, "%Y-%m")
-                            print ('test', quote_month)
-                    except ValueError:
-                        print ('Error with WR # {}\n Please fix the \'Invoice to\' field in WRMS for this WR. The date needs to be entered with 3 fields (YYYY-m-d). If the data in this field is not a date, edit it so it doensn\'t read like one. Then fetch the csv data again with get_csv_data.py')
-
-
-
-
+                     wr["sla"] = False
+                elif wr['request_id'] in quoted_non_sla:
+                    # If the wr was quoted in the previous months, then ignore it
+                    wr["sla"] = False
                     wr['timesheets'] = 0
-                elif len(wr['quotes']) > 0: # if there's a quote
-                    if wr['quotes'][0]['status'] == 'Approved':
-                        if wr['quotes'][0]['sla'] is False: #approved and not sla - uses time quoted instead of timesheeted
-                            quoted_non_sla[wr['request_id']] = wr['quotes'][0]['orig'][4]
-                        else:#approved and sla
-                            quoted_sla[wr['request_id']] = wr['quotes'][0]['orig'][4]
-                        wr['timesheets'] = float(wr['quotes'][0]['orig'][4])
-                    else:
-                        if wr['quotes'][0]['sla'] is False:#quoted, not approved not sla
-                            quoted_non_sla[wr['request_id']] = wr['quotes'][0]['orig'][4]
-                        else: #quoted, not approved sla
-                            non_quoted_sla[wr['request_id']] = wr['quotes'][0]['orig'][4]
-                        #wr['timesheets'] = float(wr['quotes'][0]['orig'][4]) # use timesheeted hours for unapproved quotes
+                elif wr['request_id'] in quoted_sla:
+                    # If the wr was quoted in the previous months, then ignore it
+                    wr["sla"] = True
+                    wr['timesheets'] = 0
+                elif len(wr['quotes_approved']) > 0: # if there's an approved quote
+                    if wr['quotes_approved'][0]['sla'] is False: #approved and not sla - uses time quoted instead of timesheeted
+                        quoted_non_sla[wr['request_id']] = 0 # wr['quotes'][0]['orig'][4]
+                        wr["sla"] = False
+                    else: #approved and sla
+                        quoted_sla[wr['request_id']] = 0 #wr['quotes'][0]['orig'][4]
+                        wr["sla"] = True
+                        # TODO: Are approved SLA quotes normal sla hours? Garth thinks so.
+                        # When the quotes added up go over SLA time, then is it additional?
+                    wr['timesheets'] = float(wr['quotes_approved'][0]['orig'][4])
+                elif len(wr["quotes_unapproved"]) > 0:
+                    # Unapproved quotes are always SLA.
+                    wr["sla"] = True
+                    # TODO: Set wr["timesheets"] = min(wr["timesheets"], 1)?
+                else:
+                    # No quotes, so must be sla
+                    wr["sla"] = True
+                    # TODO: Check with jacques
 
     def get_active_month(self):
-        for month in self.months:
-            if month.month == self.date:
-                return month
+        return self.get_month(self.date)
 
+    def get_month(self, date):
+        for month in self.months:
+            if month.month == date:
+                return month
 
 def round_up_to(number, accuracy):
     """ Round a number up to the closest accuracy

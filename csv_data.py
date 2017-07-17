@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 import csv
+from datetime import datetime
 import pprint
 import sys
 
@@ -81,7 +82,7 @@ class SlaSlurper:
 
         self.swallow_blank()
 
-        data["quotes"] = self.parse_quotes()
+        data["quotes_approved"], data["quotes_unapproved"] = self.parse_quotes()
         self.swallow_blank()  # Swallow the line "Timesheets:"
         try:
             data["previous_month"] = float(next(self.rows)[1])
@@ -98,8 +99,16 @@ class SlaSlurper:
         while True:
             next_row = next(self.rows)
             if len(next_row) == 0:
-                return quotes
+                break
             quotes.append(self.parse_quote(next_row))
+        approved_quotes = []
+        unapproved_quotes = []
+        for q in quotes:
+            if q["status"] == "Approved":
+                approved_quotes.append(q)
+            else:
+                unapproved_quotes.append(q)
+        return approved_quotes, unapproved_quotes
 
     def parse_quote(self, quote):
         parsed_quote = {
@@ -109,6 +118,9 @@ class SlaSlurper:
         }
         if "SLA" in quote[1]:
             parsed_quote["sla"] = True
+            quote_id, month, sla = quote[1].split()
+            year, month = month.split("-")
+            parsed_quote["sla_month"] = datetime(int(year), int(month), 1)
         else:
             parsed_quote["sla"] = False
         return parsed_quote
