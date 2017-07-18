@@ -22,7 +22,6 @@ def get_url():
     elif len(sys.argv) == 1: #if there are no norgs listed in argv, get data for all orgs in config file
         for o in sla_list:
             org_list.append(o)
-        #org_list.update(sla_list)
 
     for org in org_list: #get a list of url's to get csv data from, using the config files
         with open ('clients/' + org + '/' + org + '.json') as data_file:

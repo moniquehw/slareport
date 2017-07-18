@@ -42,7 +42,7 @@ class Client:
 
     def get_last_modified(self):
         """ Get the current date as a YYYY-MM-DD string to be used as a last modified
-        
+
         Returns:
             A string with the format YYYY-MM-DD
         """
@@ -121,8 +121,11 @@ class Client:
                 quotes = wr["quotes_approved"] + wr["quotes_unapproved"]
                 if len(quotes) > 0:
                     if quotes[0]["sla"] and quotes[0]["sla_month"] != month.month:
-                        # NOTE: If there are two approved quotes for two different months, you're out of luck
                         ids_to_pop.append(wr["request_id"])
+
+                        if quotes[0]['sla_month'] > self.date:  # If it's a future month, skip doing anything
+                            continue
+                        # NOTE: If there are two approved quotes for two different months, you're out of luck
                         new_month = self.get_month(quotes[0]["sla_month"])
                         new_month.get_wr(wr["request_id"])["quotes_approved"].append(wr["quotes_approved"]) # This won't work if there are no timesheets for that month
                         new_month.get_wr(wr["request_id"])["quotes_unapproved"].append(wr["quotes_unapproved"])
@@ -134,26 +137,31 @@ class Client:
 
         for month in self.months:
             for wr in month.wrs:
+                request_id = wr['request_id']
                 wr["timesheets"] = round_up_to(wr['timesheets'], self.config['rounding'])
                 if self.config['hosting_hrs_additional'] and 'Hosting' in wr['system']:
                      # if the wr is in a hosting system and hosting counts towards sla hours
                      wr["sla"] = False
-                elif wr['request_id'] in quoted_non_sla:
+                elif request_id in quoted_non_sla:
                     # If the wr was quoted in the previous months, then ignore it
                     wr["sla"] = False
                     wr['timesheets'] = 0
-                elif wr['request_id'] in quoted_sla:
+                elif request_id in quoted_sla:
                     # If the wr was quoted in the previous months, then ignore it
                     wr["sla"] = True
                     wr['timesheets'] = 0
                 elif len(wr['quotes_approved']) > 0: # if there's an approved quote
-                    if wr['quotes_approved'][0]['sla'] is False: #approved and not sla
-                        quoted_non_sla[wr['request_id']] = 0
+                    quotes = wr['quotes_approved']
+                    if quotes[0]['sla'] is False: #approved and not sla
+                        quoted_non_sla[request_id] = 0
                         wr["sla"] = False
                     else: #approved and sla
-                        quoted_sla[wr['request_id']] = 0
+                        quoted_sla[request_id] = 0
                         wr["sla"] = True
-                    wr['timesheets'] = float(wr['quotes_approved'][0]['orig'][4]) # approved quotes use quote time instead of timesheet time
+                    quoted_time = 0
+                    for q in quotes:
+                        quoted_time += float(q['orig'][4])
+                    wr['timesheets'] = quoted_time # approved quotes use quote time instead of timesheet time
                 elif len(wr["quotes_unapproved"]) > 0:
                     # Unapproved quotes are always SLA.
                     wr["sla"] = True
