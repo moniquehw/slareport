@@ -42,18 +42,15 @@ class Client:
 
     def get_last_modified(self):
         """ Get the current date as a YYYY-MM-DD string to be used as a last modified
-
+        
         Returns:
             A string with the format YYYY-MM-DD
-
         """
         return datetime.now().strftime('%Y-%m-%d')
 
     def initialise_data(self):
         """ Initialise the monthly data for this client. Gets data from wrms and the csv.
-
-        Also calls some functions to fiddle the data as appropriate.
-
+            Also calls some functions to fiddle the data as appropriate.
         """
 
         csv_months = self.get_data_from_csv().months
@@ -96,9 +93,12 @@ class Client:
         return summary_data
 
     def get_deployment_list(self):
+        """ Gets a list of deployments for the given month.
+            Combines an api call and the data from the monthly config file
+        """
         list_of_production_changes = self.month_config['list_of_production_changes']
         if self.token != 'noapi':
-            deployment_list = get_deployments(self.token, self.month_config, self.config['deployment_head_wr'])
+            deployment_list = get_deployments(self.token, self.date, self.config['deployment_head_wr'])
             for deployment in deployment_list: #for 1 deployment in list of deployments
                 list_of_production_changes.append(deployment) # add the deployment to deployments
                 date = deployment['date'].strftime("%d %B %Y")
@@ -113,7 +113,6 @@ class Client:
     def sort_quotes(self):
         """ Update the timesheeted hours in client for each WR (to take into account previous
             months work that has already been quoted and the hours taken off).
-
         """
         # First, assign each WR to the appropriate month
         for month in self.months:
@@ -148,28 +147,26 @@ class Client:
                     wr["sla"] = True
                     wr['timesheets'] = 0
                 elif len(wr['quotes_approved']) > 0: # if there's an approved quote
-                    if wr['quotes_approved'][0]['sla'] is False: #approved and not sla - uses time quoted instead of timesheeted
-                        quoted_non_sla[wr['request_id']] = 0 # wr['quotes'][0]['orig'][4]
+                    if wr['quotes_approved'][0]['sla'] is False: #approved and not sla
+                        quoted_non_sla[wr['request_id']] = 0
                         wr["sla"] = False
                     else: #approved and sla
-                        quoted_sla[wr['request_id']] = 0 #wr['quotes'][0]['orig'][4]
+                        quoted_sla[wr['request_id']] = 0
                         wr["sla"] = True
-                        # TODO: Are approved SLA quotes normal sla hours? Garth thinks so.
-                        # When the quotes added up go over SLA time, then is it additional?
-                    wr['timesheets'] = float(wr['quotes_approved'][0]['orig'][4])
+                    wr['timesheets'] = float(wr['quotes_approved'][0]['orig'][4]) # approved quotes use quote time instead of timesheet time
                 elif len(wr["quotes_unapproved"]) > 0:
                     # Unapproved quotes are always SLA.
                     wr["sla"] = True
-                    # TODO: Set wr["timesheets"] = min(wr["timesheets"], 1)?
                 else:
                     # No quotes, so must be sla
                     wr["sla"] = True
-                    # TODO: Check with jacques
 
     def get_active_month(self):
+        """ Get the date of report month"""
         return self.get_month(self.date)
 
     def get_month(self, date):
+        """ get the datetime date for a month"""
         for month in self.months:
             if month.month == date:
                 return month

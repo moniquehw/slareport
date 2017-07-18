@@ -159,7 +159,6 @@ def get_deployments(token, month, head_hosting_wr):
                     date = datetime.strptime(wr['brief'][-8:], "%Y%m%d")
                 except ValueError:
                     print ('Error with: {} {}\n Either this wr has no date in the brief, the date has been entered incorrectly or there is an extraneous child in WRMS. To include this WR in the report, include the correct date in the WRMS brief and run .sla_report.py again.\nACCEPTABLE DATE FORMATS: YYYYmmdd, dd-mm-YYYY, dd/mm/YYYY\n'.format(wr['request_id'], wr['brief']))
-
             if date >= month and date < next_month(month):
                 deployed_wrs = [] # A list of dictionaries
 
