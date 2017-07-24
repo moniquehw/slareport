@@ -127,20 +127,38 @@ class Client:
                      pass
                 elif wr['request_id'] in quoted_non_sla or wr['request_id'] in quoted_sla:
                     # If the wr was quoted in the previous months, then ignore it
+                    print ('WR {} has been quoted in a previous month and is being skipped'.format(wr['request_id']))
                     wr['timesheets'] = 0
+
                 elif len(wr['quotes']) > 0: # if there's a quote
-                    if wr['quotes'][0]['status'] == 'Approved':   #TODO where should non-appproved quotes go?
+                    if wr['quotes'][0]['status'] == 'Approved':
                         if wr['quotes'][0]['sla'] is False: #approved and not sla
                             quoted_non_sla[wr['request_id']] = wr['quotes'][0]['orig'][4]
                         else:#approved and sla
                             quoted_sla[wr['request_id']] = wr['quotes'][0]['orig'][4]
                         wr['timesheets'] = float(wr['quotes'][0]['orig'][4])
+
+                        if len(wr['quotes']) > 1:
+                            charged_to = wr['quotes'][0]['orig'][1]
+                            if wr['quotes'][0]['orig'][4] == 1:
+                                hours = 'hour has'
+                            else:
+                                hours = 'hours have'
+
+                            if 'SLA' in charged_to:
+                                charged_to = charged_to[-4:]
+
+                            print ('\nWR {} has multiple quotes attached to it.\nFor quote number {}, {} {} been added to the table for {}, but the other quotes need to be added manually\n'.format(wr['request_id'], wr['quotes'][0]['orig'][2], wr['quotes'][0]['orig'][4], hours, charged_to))
+                            quoted_non_sla[wr['request_id']] = wr['quotes'][0]['orig'][4]
+                            wr['timesheets'] = float(wr['quotes'][0]['orig'][4])
+                            #print (wr['request_id'], wr['timesheets'], wr['quotes'][0]['orig'][4])
                     else:
                         if wr['quotes'][0]['sla'] is False:#quoted, not approved not sla
                             quoted_non_sla[wr['request_id']] = 0 # wr['quotes'][0]['orig'][4]
                         else: #quoted, not approved sla
                             quoted_sla[wr['request_id']] = 0 # wr['quotes'][0]['orig'][4]
-                        wr['timesheets'] = 0
+
+
 
     def get_active_month(self):
         for month in self.months:
